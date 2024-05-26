@@ -1,6 +1,6 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
+import 'person_counter.dart';
+import 'tip_slider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,19 +32,43 @@ class TipCalculator extends StatefulWidget {
 
 class _TipCalculatorState extends State<TipCalculator> {
   int _personCount = 1;
+  double _sliderValue = 0.0;
+  String _billAmount = "0";
 
   void _addPersonCount() {
     setState(() {
-      _personCount += 1;
+      if (int.parse(_getTip()) > _personCount) {
+        _personCount += 1;
+      }
     });
   }
 
   void _decreasePersonCount() {
     setState(() {
       if (_personCount > 1) {
-        _personCount += 1;
+        _personCount -= 1;
       }
     });
+  }
+
+  void _setSliderValue(double value) {
+    setState(() {
+      _sliderValue = value;
+    });
+  }
+
+  void _setBillAmount(String value) {
+    setState(() {
+      _billAmount = value;
+    });
+  }
+
+  String _getTip() {
+    return '${(int.parse(_billAmount) * _sliderValue).round()}';
+  }
+
+  String _getTotalTipPerPerson() {
+    return '\$${(int.parse(_billAmount) * _sliderValue / _personCount).toStringAsFixed(2)}';
   }
 
   @override
@@ -74,7 +98,7 @@ class _TipCalculatorState extends State<TipCalculator> {
                     style: textStyle,
                   ),
                   Text(
-                    " \$ 23.00",
+                    _getTotalTipPerPerson(),
                     style: textStyle.copyWith(
                         fontSize:
                             themeContext.textTheme.displaySmall!.fontSize),
@@ -96,16 +120,8 @@ class _TipCalculatorState extends State<TipCalculator> {
               ),
               child: Column(
                 children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      prefixIcon: const Icon(Icons.attach_money),
-                      labelText: 'Bill Amount',
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (String value) {},
+                  BillAmountTextField(
+                    onChanged: _setBillAmount,
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -117,13 +133,39 @@ class _TipCalculatorState extends State<TipCalculator> {
                           style: themeContext.textTheme.bodyMedium,
                         ),
                         PersonCounter(
-                            themeContext: themeContext,
-                            personCount: _personCount,
-                            addCounter: _addPersonCount,
-                            subCounter: _decreasePersonCount)
+                          themeContext: themeContext,
+                          personCount: _personCount,
+                          addCounter: _addPersonCount,
+                          subCounter: _decreasePersonCount,
+                        ),
                       ],
                     ),
                   ),
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: 8, left: 20, right: 30, bottom: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Tip",
+                              style: themeContext.textTheme.bodyMedium,
+                            ),
+                            Text(
+                              "\$${_getTip()}",
+                              style: themeContext.textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      TipSlider(
+                        sliderValue: _sliderValue,
+                        onChanged: _setSliderValue,
+                      )
+                    ],
+                  )
                 ],
               ),
             ),
@@ -134,43 +176,23 @@ class _TipCalculatorState extends State<TipCalculator> {
   }
 }
 
-class PersonCounter extends StatelessWidget {
-  const PersonCounter(
-      {super.key,
-      required this.themeContext,
-      required int personCount,
-      required this.addCounter,
-      required this.subCounter})
-      : _personCount = personCount;
+class BillAmountTextField extends StatelessWidget {
+  const BillAmountTextField({super.key, required this.onChanged});
 
-  final ThemeData themeContext;
-  final int _personCount;
-  final VoidCallback addCounter;
-  final VoidCallback subCounter;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(1.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.remove),
-            color: themeContext.colorScheme.primary,
-            onPressed: subCounter,
-          ),
-          Text(
-            _personCount.toString(),
-            style: themeContext.textTheme.bodyMedium!
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            color: themeContext.colorScheme.primary,
-            onPressed: addCounter,
-          ),
-        ],
+    return TextField(
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        prefixIcon: const Icon(Icons.attach_money),
+        labelText: 'Bill Amount',
       ),
+      keyboardType: TextInputType.number,
+      onChanged: onChanged,
     );
   }
 }
